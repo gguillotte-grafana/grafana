@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/dashboards/database"
 	"github.com/grafana/grafana/pkg/services/guardian"
+	starstests "github.com/grafana/grafana/pkg/services/stars/starstests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -23,9 +24,10 @@ var user = &models.SignedInUser{UserId: 1}
 func TestFolderService(t *testing.T) {
 	t.Run("Folder service tests", func(t *testing.T) {
 		store := &database.FakeDashboardStore{}
+		starsFake := starstests.NewStarsServiceFake()
 		defer store.AssertExpectations(t)
 		service := ProvideFolderService(
-			&dashboards.FakeDashboardService{DashboardService: ProvideDashboardService(store, nil)},
+			&dashboards.FakeDashboardService{DashboardService: ProvideDashboardService(store, nil, starsFake)},
 			store,
 			nil,
 		)
