@@ -20,16 +20,18 @@ import (
 )
 
 type DashboardServiceImpl struct {
-	dashboardStore m.Store
-	log            log.Logger
-	starsManager   stars.Manager
+	dashboardStore     m.Store
+	dashAlertExtractor alerting.DashAlertExtractor
+	log                log.Logger
+	starsManager       stars.Manager
 }
 
-func ProvideDashboardService(store m.Store, starsManager stars.Manager) *DashboardServiceImpl {
+func ProvideDashboardService(store m.Store, dashAlertExtractor alerting.DashAlertExtractor, starsManager stars.Manager) *DashboardServiceImpl {
 	return &DashboardServiceImpl{
-		dashboardStore: store,
-		log:            log.New("dashboard-service"),
-		starsManager:   starsManager,
+		dashboardStore:     store,
+		dashAlertExtractor: dashAlertExtractor,
+		log:                log.New("dashboard-service"),
+		starsManager:       starsManager,
 	}
 }
 
@@ -77,7 +79,8 @@ func (dr *DashboardServiceImpl) BuildSaveDashboardCommand(ctx context.Context, d
 	}
 
 	if shouldValidateAlerts {
-		if err := validateAlerts(ctx, dash, dto.User); err != nil {
+		dashAlertInfo := alerting.DashAlertInfo{Dash: dash, User: dto.User, OrgID: dash.OrgId}
+		if err := dr.dashAlertExtractor.ValidateAlerts(ctx, dashAlertInfo); err != nil {
 			return nil, err
 		}
 	}
@@ -146,11 +149,6 @@ func (dr *DashboardServiceImpl) DeleteOrphanedProvisionedDashboards(ctx context.
 	return dr.dashboardStore.DeleteOrphanedProvisionedDashboards(ctx, cmd)
 }
 
-var validateAlerts = func(ctx context.Context, dash *models.Dashboard, user *models.SignedInUser) error {
-	extractor := alerting.NewDashAlertExtractor(dash, dash.OrgId, user)
-	return extractor.ValidateAlerts(ctx)
-}
-
 func validateDashboardRefreshInterval(dash *models.Dashboard) error {
 	if setting.MinRefreshInterval == "" {
 		return nil
@@ -176,19 +174,6 @@ func validateDashboardRefreshInterval(dash *models.Dashboard) error {
 	}
 
 	return nil
-}
-
-// UpdateAlerting updates alerting.
-//
-// Stubbable by tests.
-var UpdateAlerting = func(ctx context.Context, store m.Store, orgID int64, dashboard *models.Dashboard, user *models.SignedInUser) error {
-	extractor := alerting.NewDashAlertExtractor(dashboard, orgID, user)
-	alerts, err := extractor.GetAlerts(ctx)
-	if err != nil {
-		return err
-	}
-
-	return store.SaveAlerts(ctx, dashboard.Id, alerts)
 }
 
 func (dr *DashboardServiceImpl) SaveProvisionedDashboard(ctx context.Context, dto *m.SaveDashboardDTO,
@@ -217,7 +202,19 @@ func (dr *DashboardServiceImpl) SaveProvisionedDashboard(ctx context.Context, dt
 	}
 
 	// alerts
-	if err := UpdateAlerting(ctx, dr.dashboardStore, dto.OrgId, dash, dto.User); err != nil {
+	dashAlertInfo := alerting.DashAlertInfo{
+		User:  dto.User,
+		Dash:  dash,
+		OrgID: dto.OrgId,
+	}
+
+	alerts, err := dr.dashAlertExtractor.GetAlerts(ctx, dashAlertInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dr.dashboardStore.SaveAlerts(ctx, dash.Id, alerts)
+	if err != nil {
 		return nil, err
 	}
 
@@ -239,7 +236,19 @@ func (dr *DashboardServiceImpl) SaveFolderForProvisionedDashboards(ctx context.C
 		return nil, err
 	}
 
-	if err := UpdateAlerting(ctx, dr.dashboardStore, dto.OrgId, dash, dto.User); err != nil {
+	dashAlertInfo := alerting.DashAlertInfo{
+		User:  dto.User,
+		Dash:  dash,
+		OrgID: dto.OrgId,
+	}
+
+	alerts, err := dr.dashAlertExtractor.GetAlerts(ctx, dashAlertInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dr.dashboardStore.SaveAlerts(ctx, dash.Id, alerts)
+	if err != nil {
 		return nil, err
 	}
 
@@ -265,7 +274,19 @@ func (dr *DashboardServiceImpl) SaveDashboard(ctx context.Context, dto *m.SaveDa
 		return nil, fmt.Errorf("saving dashboard failed: %w", err)
 	}
 
-	if err := UpdateAlerting(ctx, dr.dashboardStore, dto.OrgId, dash, dto.User); err != nil {
+	dashAlertInfo := alerting.DashAlertInfo{
+		User:  dto.User,
+		Dash:  dash,
+		OrgID: dto.OrgId,
+	}
+
+	alerts, err := dr.dashAlertExtractor.GetAlerts(ctx, dashAlertInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dr.dashboardStore.SaveAlerts(ctx, dash.Id, alerts)
+	if err != nil {
 		return nil, err
 	}
 

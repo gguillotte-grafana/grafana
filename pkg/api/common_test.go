@@ -369,7 +369,7 @@ func setupHTTPServerWithCfg(t *testing.T, useFakeAccessControl, enableAccessCont
 		RouteRegister:      routeRegister,
 		SQLStore:           db,
 		searchUsersService: searchusers.ProvideUsersService(bus, filters.ProvideOSSSearchUserFilter()),
-		dashboardService:   dashboardservice.ProvideDashboardService(dashboardsStore, starsFake),
+		dashboardService:   dashboardservice.ProvideDashboardService(dashboardsStore, nil, starsFake),
 		StarsService:       starsFake,
 	}
 
