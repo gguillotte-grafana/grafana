@@ -41,11 +41,10 @@ Follow these instructions if you are a Grafana Server Admin.
 
 {{< docs/list >}}
 {{< docs/shared "manage-users/view-server-org-list.md" >}}
-
 1. In the organization list, click the name of the organization that you want to change.
 1. In **Name**, enter the new organization name.
 1. Click **Update**.
-   {{< /docs/list >}}
+{{< /docs/list >}}
 
 #### Organization Admin change organization name
 
@@ -53,10 +52,9 @@ If you are an Organization Admin, follow these steps:
 
 {{< docs/list >}}
 {{< docs/shared "preferences/org-preferences-list.md" >}}
-
 1. In **Organization name**, enter the new name.
 1. Click **Update organization name**.
-   {{< /docs/list >}}
+{{< /docs/list >}}
 
 ### Change team name or email
 
